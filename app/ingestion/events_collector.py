@@ -1,5 +1,9 @@
 from kubernetes import client, config, watch
 import json
+from app.models.event_model import KubernetesEvent
+from app.services.kafka_producer import KafkaProducerService
+
+kafka_service = KafkaProducerService()
 
 def stream_events(namespace=None):
     print("Setting up Kubernetes client...")
@@ -27,9 +31,8 @@ def stream_events(namespace=None):
             "object_name": obj.involved_object.name,
             "timestamp": obj.last_timestamp.isoformat() if obj.last_timestamp else None
         }
-        
-        if event_data["type"] == "Warning":
-            print(json.dumps(event_data, indent=2))
+        event = KubernetesEvent(**event_data)
+        kafka_service.send_event("kube-events", event.dict())
 
 if __name__ == "__main__":
     print("Starting events collector...")
