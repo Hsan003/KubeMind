@@ -1,4 +1,4 @@
-annotated-types==0.7.0
+nnotated-types==0.7.0
 anyio==3.7.1
 certifi==2026.2.25
 charset-normalizer==3.4.7
