@@ -1,36 +1,15 @@
-from kubernetes import client, config, watch
-import json
+from kubernetes import watch
+from app.utils.k8s_client import K8sClient
 
-def stream_events(namespace=None):
-    print("Setting up Kubernetes client...")
-    try:
-        print("Trying in-cluster config...")
-        config.load_incluster_config()
-    except:
-        print("In-cluster config failed, trying kubeconfig...")
-        config.load_kube_config()
+def stream_raw_events(namespace=None):
+    """Generator that streams raw Kubernetes events from the API."""
 
-    v1 = client.CoreV1Api()
+    v1 = K8sClient.get_core_v1()
     w = watch.Watch()
+    
+    func = v1.list_namespaced_event if namespace else v1.list_event_for_all_namespaces
+    
+    kwargs = {"namespace": namespace} if namespace else {}
 
-    print("Listening to events...")
-
-    for event in w.stream(v1.list_namespace_event(namespace=namespace) if namespace else v1.list_event_for_all_namespaces()):
-        obj = event["object"]
-
-        event_data = {
-            "type": obj.type,
-            "reason": obj.reason,
-            "message": obj.message,
-            "namespace": obj.metadata.namespace,
-            "object_kind": obj.involved_object.kind,
-            "object_name": obj.involved_object.name,
-            "timestamp": obj.last_timestamp.isoformat() if obj.last_timestamp else None
-        }
-        
-        if event_data["type"] == "Warning":
-            print(json.dumps(event_data, indent=2))
-
-if __name__ == "__main__":
-    print("Starting events collector...")
-    stream_events(namespace = "demo")
+    for event in w.stream(func, **kwargs):
+        yield event["object"]
