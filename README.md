@@ -132,17 +132,37 @@ kubectl logs -f deployment/k8s-ai-incident-analyzer
 
 ## API Endpoints
 
-### Incident Management
-- **POST** `/api/v1/incidents` - Create a new incident
-- **GET** `/api/v1/incidents` - List all incidents
-- **GET** `/api/v1/incidents/{id}` - Get incident details
-- **PUT** `/api/v1/incidents/{id}` - Update an incident
-- **POST** `/api/v1/incidents/{id}/analyze` - Analyze an incident
+### Metrics Collector (V1)
+- **POST** `/api/v1/metrics/collect` - Collect Prometheus metrics for a namespace/workload scope.
+
+Example request:
+```bash
+curl -X POST http://localhost:8000/api/v1/metrics/collect \
+  -H "Content-Type: application/json" \
+  -d '{
+    "namespace": "default",
+    "workload_name": "demo-api",
+    "lookback_minutes": 15,
+    "step": "30s"
+  }'
+```
+
+Response behavior:
+- Returns normalized metric groups for CPU, memory, restart count, request rate, and error rate.
+- Each metric has explicit status values: `success`, `empty`, or `error`.
+- `empty` means Prometheus returned 200 but no matching time series.
 
 ### System
-- **GET** `/health` - Health check
-- **GET** `/stats` - System statistics
+- **GET** `/health` - Health check with real Prometheus connectivity probe (`up` query).
 - **GET** `/` - Root endpoint
+
+### Prometheus metric assumptions
+- CPU: `container_cpu_usage_seconds_total`
+- Memory: `container_memory_working_set_bytes`
+- Restarts: `kube_pod_container_status_restarts_total`
+- Requests/error rates: `http_requests_total`
+
+If your cluster uses different metric names or labels, update the query catalog in `app/ingestion/queries.py`.
 
 ## Code Writing Best Practices
 

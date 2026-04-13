@@ -1,10 +1,8 @@
 """
 FastAPI application entry point
 """
-import logging
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
 from config.settings import settings
 from app.api.routes import router
 from app.storage.database import init_db
@@ -28,6 +26,13 @@ app.add_middleware(
 
 # Include routers
 app.include_router(router)
+
+
+@app.on_event("startup")
+async def startup_event() -> None:
+    """Initialize lightweight startup dependencies."""
+    init_db()
+
 
 @app.get("/")
 async def root():
