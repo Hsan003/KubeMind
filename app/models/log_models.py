@@ -1,27 +1,36 @@
-from pydantic import BaseModel, Field
 from datetime import datetime
-from enum import Enum
 from typing import Optional
-import uuid
+from pydantic import BaseModel, Field
 
-class LogSeverity(str, Enum):
-    DEBUG = "debug"
-    INFO = "info"
-    WARNING = "warning"
-    ERROR = "error"
-    CRITICAL = "critical"
 
-class PodLog(BaseModel):
-    pod_name: str
+class LogEntry(BaseModel):
+    """A single parsed log line from a Kubernetes pod."""
+
     namespace: str
-    container: str
+    pod_name: str
+    container_name: str
     timestamp: datetime
-    raw_message: str
-    severity: LogSeverity = LogSeverity.INFO
-    labels: dict = Field(default_factory=dict)
+    message: str
+    labels: dict[str, str] = Field(default_factory=dict)
 
-class EnrichedLog(PodLog):
-    cluster_name: str
-    error_patterns: list[str] = Field(default_factory=list)
-    ingestion_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    ingested_at: datetime = Field(default_factory=datetime.utcnow)
+    # Optional fields populated during analysis
+    log_level: Optional[str] = None   # INFO, WARN, ERROR, DEBUG
+    source: str = "kubernetes"
+
+
+class LogQueryParams(BaseModel):
+    """Parameters used to query logs from Kubernetes."""
+
+    namespace: str
+    pod_name: Optional[str] = None          # None = all pods in namespace
+    container_name: Optional[str] = None
+    since_seconds: int = 3600               # default: last hour
+    tail_lines: int = 500                   # max lines per pod
+    include_previous: bool = False          # include logs from crashed containers
+
+
+class LokiPushPayload(BaseModel):
+    """Loki HTTP push payload shape (for documentation — serialised manually)."""
+
+    # {"streams": [{"stream": {labels}, "values": [[ts_ns_str, line], ...]}]}
+    streams: list[dict]

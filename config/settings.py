@@ -1,24 +1,38 @@
-"""Application configuration and settings.
+from functools import lru_cache
 
-Load application configuration from environment variables and .env files.
-Manages settings for API, database, Loki, Prometheus, and AI models.
-"""
-from pydantic_settings import BaseSettings
-from typing import Optional
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
-    # Your internal Loki (docker-compose)
-    LOKI_URL: str = "http://loki:3100"
+    """
+    Loaded from environment variables or a .env file.
+    All fields have safe defaults for local dev.
+    """
 
-    # Target cluster credentials (user provides ONE of these)
-    KUBECONFIG_PATH: Optional[str] = None   # e.g. /home/user/.kube/config
-    K8S_API_URL: Optional[str] = None       # e.g. https://my-cluster:6443
-    K8S_TOKEN: Optional[str] = None         # bearer token
+    # Loki
+    loki_url: str = "http://localhost:3100"
 
-    CLUSTER_NAME: str = "default"
-    LOG_TAIL_LINES: int = 500
+    # Kubernetes — comma-separated list used by background collectors
+    k8s_watch_namespaces: str = "default"
 
-    class Config:
-        env_file = ".env"
+    # Ingestion defaults
+    log_since_seconds: int = 3600
+    log_tail_lines: int = 500
 
-settings = Settings()
+    # App
+    app_name: str = "k8s-ai-incident-analyzer"
+    log_level: str = "INFO"
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+
+    @property
+    def watch_namespaces(self) -> list[str]:
+        """Return the namespace list as a Python list."""
+        return [ns.strip() for ns in self.k8s_watch_namespaces.split(",") if ns.strip()]
+
+
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()

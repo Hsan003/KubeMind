@@ -1,13 +1,13 @@
 services:
-  app:
-    build: .
-    ports:
-      - "8000:8000"
-    env_file: .env
-    depends_on:
-      - loki
-    volumes:
-      - ~/.kube:/home/app/.kube:ro   # mount user's kubeconfig read-only
+#  app:
+#    build: .
+#    ports:
+#      - "8000:8000"
+#    env_file: .env
+#    depends_on:
+#      - loki
+#    volumes:
+#      - ~/.kube:/home/app/.kube:ro   # mount user's kubeconfig read-only
 
   loki:
     image: grafana/loki:2.9.0
