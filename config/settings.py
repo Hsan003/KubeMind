@@ -25,7 +25,7 @@ class Settings(BaseSettings):
     app_name: str = "k8s-ai-incident-analyzer"
     log_level: str = "INFO"
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8",    extra="allow"  )
 
     @property
     def watch_namespaces(self) -> list[str]:

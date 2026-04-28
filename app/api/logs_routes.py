@@ -21,7 +21,7 @@ def _get_service() -> LogIngestionService:
 # ------------------------------------------------------------------
 
 class IngestRequest(BaseModel):
-    namespace: str
+    namespace: str = "demo"
     pod_name: str | None = None
     container_name: str | None = None
     since_seconds: int = 3600
