@@ -3,15 +3,17 @@ FastAPI application entry point
 """
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from config.settings import settings
-from app.api.routes import router
-from app.storage.database import init_db
+from fastapi.responses import JSONResponse
+from config.settings import get_settings
+from app.api.logs_routes import router
+# from app.storage.database import init_db
 
+settings = get_settings()
 
 # Create FastAPI application
 app = FastAPI(
-    title=settings.APP_NAME,
-    version=settings.APP_VERSION,
+    title=settings.app_name,
+    version="1",
     description="AI-powered incident analyzer for Kubernetes clusters",
 )
 
@@ -25,6 +27,7 @@ app.add_middleware(
 )
 
 # Include routers
+# app.include_router(router)
 app.include_router(router)
 
 
@@ -38,8 +41,8 @@ async def startup_event() -> None:
 async def root():
     """Root endpoint."""
     return {
-        "name": settings.APP_NAME,
-        "version": settings.APP_VERSION,
+        "name": "hello world",
+        "version": "1.1.67",
         "status": "running"
     }
 
@@ -49,6 +52,5 @@ if __name__ == "__main__":
     
     uvicorn.run(
         app,
-        host=settings.API_HOST,
-        port=settings.API_PORT
+        port=6767
     )
