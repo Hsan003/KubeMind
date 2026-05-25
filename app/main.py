@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from config.settings import get_settings
 from app.api.logs_routes import router
-# from app.storage.database import init_db
+from app.storage.database import init_db
 
 settings = get_settings()
 
