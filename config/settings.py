@@ -1,8 +1,7 @@
 from functools import lru_cache
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
-# from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -11,21 +10,36 @@ class Settings(BaseSettings):
     All fields have safe defaults for local dev.
     """
 
-    # Loki
-    loki_url: str = "http://localhost:3100"
+    # Loki (env: LOKI_URL)
+    loki_url: str = Field("http://localhost:3100", env="LOKI_URL")
 
-    # Kubernetes — comma-separated list used by background collectors
-    k8s_watch_namespaces: str = "default"
+    # Kubernetes — comma-separated list used by background collectors (env: K8S_WATCH_NAMESPACES)
+    k8s_watch_namespaces: str = Field("default", env="K8S_WATCH_NAMESPACES")
 
     # Ingestion defaults
-    log_since_seconds: int = 3600
-    log_tail_lines: int = 500
+    log_since_seconds: int = Field(3600, env="LOG_SINCE_SECONDS")
+    log_tail_lines: int = Field(500, env="LOG_TAIL_LINES")
 
     # App
-    app_name: str = "k8s-ai-incident-analyzer"
-    log_level: str = "INFO"
+    APP_NAME: str = Field("KubeMind", env="APP_NAME")
+    APP_VERSION: str = Field("0.1.0", env="APP_VERSION")
+    API_HOST: str = Field("0.0.0.0", env="API_HOST")
+    API_PORT: int = Field(8000, env="API_PORT")
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8",    extra="allow"  )
+    # logging
+    log_level: str = Field("INFO", env="LOG_LEVEL")
+
+    # Prometheus / metrics
+    PROMETHEUS_URL: str = Field("http://prometheus:9090", env="PROMETHEUS_URL")
+    PROMETHEUS_TIMEOUT_SECONDS: float = Field(10.0, env="PROMETHEUS_TIMEOUT_SECONDS")
+    PROMETHEUS_DEFAULT_LOOKBACK_MINUTES: int = Field(15, env="PROMETHEUS_DEFAULT_LOOKBACK_MINUTES")
+    PROMETHEUS_DEFAULT_STEP: str = Field("15s", env="PROMETHEUS_DEFAULT_STEP")
+
+    # Convenience namespace value (some code expects `NAMESPACE`)
+    NAMESPACE: str = Field("default", env="NAMESPACE")
+
+    # pydantic v2 configuration: load from .env by default
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
     @property
     def watch_namespaces(self) -> list[str]:
@@ -36,3 +50,7 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
+
+
+# Module-level singleton for convenience imports: `from config.settings import settings`
+settings = get_settings()
