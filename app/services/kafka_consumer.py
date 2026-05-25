@@ -1,14 +1,14 @@
-import json
-
 from kafka import KafkaConsumer
+import json
 
 
 def create_consumer() -> KafkaConsumer:
     return KafkaConsumer(
         "kube-events",
         bootstrap_servers="localhost:9092",
+        auto_offset_reset="latest",
+        group_id="debug",
         value_deserializer=lambda m: json.loads(m.decode("utf-8")),
-        auto_offset_reset="earliest"
     )
 
 
@@ -16,12 +16,7 @@ def run_consumer() -> None:
     consumer = create_consumer()
     print("👂 Listening to Kafka...")
     for msg in consumer:
-        print("📥 RECEIVED:", msg.value)
-
-
-def test_consumer_module_imports() -> None:
-    """Verify the consumer module imports without connecting to Kafka at import time."""
-    assert create_consumer is not None
+        print(msg.value)
 
 
 if __name__ == "__main__":

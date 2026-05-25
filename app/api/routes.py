@@ -41,3 +41,7 @@ async def health_check() -> dict:
         "status": "ok",
         "prometheus": health,
     }
+
+@router.get("/test")
+def test_route():
+    return {"message": "Success"}
