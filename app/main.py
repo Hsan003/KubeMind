@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from config.settings import get_settings
 from app.api.logs_routes import router as logs_router
 from app.api.events import router as events_router
+from app.api.routes import router as metrics_router
 #from app.storage.database import init_db
 
 settings = get_settings()
@@ -30,6 +31,7 @@ app.add_middleware(
 # Include routers
 #app.include_router(logs_router)
 app.include_router(events_router)
+app.include_router(metrics_router)
 
 """
 @app.on_event("startup")

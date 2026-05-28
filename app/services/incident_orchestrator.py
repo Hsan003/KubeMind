@@ -48,3 +48,23 @@ class IncidentOrchestrator:
             step=step or settings.PROMETHEUS_DEFAULT_STEP,
         )
         return await self.collect_metrics(request=request)
+
+    async def analyze_metrics_with_agent(
+        self,
+        question: str,
+        request: MetricsCollectionRequest,
+    ) -> dict:
+        """Collect metrics, then run MetricsAgent for interpretation."""
+        from app.agents.metrics_agent import MetricsAgent
+        from app.agents.metrics_agent.tools import snapshot_to_tool_output
+
+        snapshot = await self.collect_metrics(request=request)
+        pre_collected = snapshot_to_tool_output(snapshot).model_dump()
+        agent = MetricsAgent(orchestrator=self)
+        return await agent.analyze_metrics(
+            question=question,
+            scope={
+                "pre_collected_metrics": pre_collected,
+                "collection_scope": request.model_dump(),
+            },
+        )
