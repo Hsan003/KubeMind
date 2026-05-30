@@ -10,7 +10,7 @@ from langchain.agents import create_agent
 from langchain_core.tools import BaseTool
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_openai import ChatOpenAI
-
+loki_service: LokiSer
 from config.settings import get_settings
 
 

@@ -29,7 +29,7 @@ app.add_middleware(
 )
 
 # Include routers
-#app.include_router(logs_router)
+app.include_router(logs_router)
 app.include_router(events_router)
 app.include_router(metrics_router)
 

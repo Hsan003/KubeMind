@@ -9,6 +9,121 @@ from config.settings import get_settings
 
 router = APIRouter(prefix="/ingest", tags=["log-ingestion"])
 
+# from __future__ import annotations
+
+import time
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, Depends, HTTPException, status
+from pydantic import BaseModel, Field
+
+from app.storage.loki_storage import LokiStorage
+from app.services.loki_service import LokiService
+from app.agents.log_agent.logs_agent import LogsAgent
+
+
+class LogsAgentRequest(BaseModel):
+    query: str = Field(
+        description="Natural language question about logs.",
+        examples=["Show me all ERROR logs from payments in the last 30 minutes"],
+    )
+    context: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Optional structured metadata forwarded to the agent (namespace, cluster, etc.).",
+        examples=[{"namespace": "prod", "cluster": "us-east-1"}],
+    )
+
+
+class IntermediateStep(BaseModel):
+    type: str  # "tool_call" | "tool_result"
+    name: Optional[str] = None
+    args: Optional[Dict[str, Any]] = None  # present on tool_call
+    content: Optional[str] = None  # present on tool_result
+
+
+class LogsAgentResponse(BaseModel):
+    agent_name: str
+    query: str
+    context: Dict[str, Any]
+    output: str
+    intermediate_steps: List[IntermediateStep]
+    duration_ms: float
+
+
+class HealthResponse(BaseModel):
+    status: str
+    loki_reachable: bool
+
+
+# ─────────────────────────────────────────────
+# Dependency — build agent once per request
+# (swap for a singleton / lifespan pattern in prod)
+# ─────────────────────────────────────────────
+
+def get_loki_service() -> LokiService:
+    """Create LokiService from settings. Override in tests via app.dependency_overrides."""
+    from config.settings import get_settings
+    settings = get_settings()
+    storage = LokiStorage(url=settings.loki_url)
+    return LokiService(storage=storage)
+
+
+def get_logs_agent(service: LokiService = Depends(get_loki_service)) -> LogsAgent:
+    return LogsAgent(loki_service=service)
+
+
+# ─────────────────────────────────────────────
+# Endpoints
+# ─────────────────────────────────────────────
+
+@router.post(
+    "/run",
+    response_model=LogsAgentResponse,
+    summary="Run the logs agent",
+    description=(
+            "Send a natural language query to the LogsAgent. "
+            "The agent constructs a LogQL query, fetches logs from Loki, "
+            "and returns a human-readable analysis together with the raw "
+            "intermediate tool calls for debugging."
+    ),
+)
+async def run_logs_agent(
+        body: LogsAgentRequest,
+        agent: LogsAgent = Depends(get_logs_agent),
+) -> LogsAgentResponse:
+    start = time.monotonic()
+
+    try:
+        result = await agent.run(
+            user_input=body.query,
+            context=body.context or {},
+        )
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail=f"Agent execution failed: {exc}",
+        ) from exc
+
+    duration_ms = (time.monotonic() - start) * 1000
+
+    steps = [
+        IntermediateStep(
+            type=s["type"],
+            name=s.get("name"),
+            args=s.get("args"),
+            content=s.get("content"),
+        )
+        for s in result.get("intermediate_steps", [])
+    ]
+
+    return LogsAgentResponse(
+        agent_name=result["agent_name"],
+        query=result["input"],
+        context=result["context"],
+        output=result["output"],
+        intermediate_steps=steps,
+        duration_ms=round(duration_ms, 2),
+    )
 
 def _get_service() -> LogIngestionService:
     """Lightweight factory — creates a service with settings from env."""
