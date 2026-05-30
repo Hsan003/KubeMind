@@ -35,6 +35,17 @@ class Settings(BaseSettings):
     PROMETHEUS_DEFAULT_LOOKBACK_MINUTES: int = Field(15, env="PROMETHEUS_DEFAULT_LOOKBACK_MINUTES")
     PROMETHEUS_DEFAULT_STEP: str = Field("15s", env="PROMETHEUS_DEFAULT_STEP")
 
+    # Agent runtime
+    MODEL_PROVIDER: str = Field("openai", env="MODEL_PROVIDER")
+    MODEL_API_KEY: str = Field("", env="MODEL_API_KEY")
+    MODEL_NAME: str = Field("gpt-4o-mini", env="MODEL_NAME")
+    GOOGLE_API_KEY: str = Field("", env="GOOGLE_API_KEY")
+    OPENAI_API_KEY: str = Field("", env="OPENAI_API_KEY")
+    OPENAI_MODEL: str = Field("gpt-4o-mini", env="OPENAI_MODEL")
+    AGENT_TEMPERATURE: float = Field(0.0, env="AGENT_TEMPERATURE")
+    AGENT_MAX_ITERATIONS: int = Field(6, env="AGENT_MAX_ITERATIONS")
+    AGENT_VERBOSE: bool = Field(False, env="AGENT_VERBOSE")
+
     # Convenience namespace value (some code expects `NAMESPACE`)
     NAMESPACE: str = Field("default", env="NAMESPACE")
 

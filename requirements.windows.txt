@@ -5,6 +5,10 @@ charset-normalizer==3.4.7
 click==8.3.1
 durationpy==0.10
 fastapi==0.104.1
+langchain
+langchain-core
+langchain-google-genai
+langchain-openai
 greenlet==3.3.2
 h11==0.16.0
 httpcore==1.0.9
